@@ -1,3 +1,5 @@
+const piece_size = 50;
+
 let htmlBoard = [];
 let board = [];
 let playerTurn = false;
@@ -15,8 +17,22 @@ function endTurn()
     }
 }
 
+function addPieces(td)
+{
+    td.innerHTML = `
+    <svg id="x" viewBox="0 0 ${piece_size} ${piece_size}" style="visibility: hidden; display: none;">
+        <path d="M${piece_size} 0 L0 ${piece_size} M0 0 L${piece_size} ${piece_size} Z"/>
+    </svg>
+    
+    <svg id="o" viewBox="0 0 ${piece_size} ${piece_size}" style="visibility: hidden; display: none;">
+        <circle cx="${piece_size / 2}" cy="${piece_size / 2}" r="${piece_size / 2 - 5}"/>
+    </svg>`;
+}
+
 function updateHtmlBoard()
 {
+    const parseStyle = v => v ? 'visibility: visible;' : 'visibility: none; display:none';
+
     for(let y = 0; y < 3; ++y)
     {
         for(let x = 0; x < 3; ++x)
@@ -24,8 +40,8 @@ function updateHtmlBoard()
             let elem = htmlBoard[y * 3 + x];
             let v = board[y * 3 + x];
 
-            elem.innerHTML = v.toUpperCase();
-            elem.className = v;
+            elem.children[0].style = parseStyle(v === 'x')
+            elem.children[1].style = parseStyle(v === 'o');
         }
     }
 }
@@ -69,41 +85,31 @@ function init()
 
         for(let x = 0; x < 3; ++x)
         {
-            let td = row.appendChild(document.createElement('td'));
-            htmlBoard[y * 3 + x] = td.appendChild(document.createElement('p'));
-            board[y * 3 + x] = '';
+            let td = htmlBoard[y * 3 + x] = row.appendChild(document.createElement('td'));
+            addPieces(td);
 
             td.onclick = () => onClick(y, x);
         }
-    }
-
-    running = true;
-    playerTurn = Math.floor(Math.random() * 2) === 0;
-
-    updateHtmlBoard();
-    updateStatus();
-}
-
-async function start()
-{
-    setStatus("Setting Up...");
-    init();
-
-    if(!playerTurn)
-    {
-        await xMove();
     }
 }
 
 async function reset()
 {
-    let board = document.getElementById('board');
-    while(board.firstChild)
+    running = true;
+    playerTurn = Math.floor(Math.random() * 2) === 0;
+
+    for(let i = 0; i < 9; ++i)
     {
-        board.removeChild(board.firstChild);
+        board[i] = '';
     }
 
-    await start();
+    updateHtmlBoard();
+    updateStatus();
+
+    if(!playerTurn)
+    {
+        await xMove();
+    }
 }
 
 function scoreBoard(vBoard, targetPlayer)
@@ -283,5 +289,8 @@ function setStatus(text)
 
 window.onload = async () =>
 {
-    await start();
+    setStatus("Setting Up...");
+    init();
+
+    await reset();
 }
